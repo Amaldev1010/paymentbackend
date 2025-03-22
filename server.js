@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
   res.send('UPI Payment Backend is Running 🚀');
 });
 
-// Create Razorpay Order for UPI (Google Pay, PhonePe, Paytm)
+// Create Razorpay Order for UPI ID Payment
 app.post('/create-upi-order', async (req, res) => {
   const { amount } = req.body;
 
@@ -43,10 +43,11 @@ app.post('/create-upi-order', async (req, res) => {
 
 // Store transaction
 app.post('/store-transaction', (req, res) => {
-  const { paymentId, amount } = req.body;
+  const { paymentId, amount, upiId } = req.body;
   const transaction = {
     id: paymentId || `upi_${Date.now()}`,
     amount: parseFloat(amount),
+    upiId: upiId || 'N/A',
     date: new Date().toISOString(),
     status: 'Completed',
   };
