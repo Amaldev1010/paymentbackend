@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
   res.send('Payment Backend is Running 🚀');
 });
 
-// Create Razorpay Payment Link API
+// Create Razorpay Payment Link API with UPI Enabled
 app.post('/create-payment-link', async (req, res) => {
   const { amount } = req.body;
 
@@ -29,14 +29,21 @@ app.post('/create-payment-link', async (req, res) => {
     const response = await razorpay.paymentLink.create({
       amount: Math.round(amount * 100), // Convert to paise
       currency: 'INR',
-      description: 'Test Payment',
+      description: 'Test Payment with UPI',
       customer: {
         email: 'test@example.com',
-        contact: '9633516378', // ✅ Updated with a valid number
+        contact: '9633516378', // ✅ Valid number
       },
       notify: { sms: true, email: true },
-      callback_url: 'https://your-app-url.com/payment-success', // Replace with your actual success URL
+      callback_url: 'https://your-app-url.com/payment-status', // ✅ Replace with actual app URL
       callback_method: 'get',
+      options: {
+        payment_methods: {
+          upi: true, // ✅ UPI Enabled
+          card: true, // Optional: Enable Cards
+          netbanking: true, // Optional: Enable Net Banking
+        }
+      }
     });
 
     res.json({ success: true, payment_link: response.short_url });
