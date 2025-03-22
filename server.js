@@ -8,16 +8,13 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Simulated transaction history (use a database in production)
 let transactions = [];
 
-// Razorpay Instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create Razorpay Order
 app.post('/create-order', async (req, res) => {
   const { amount } = req.body;
   if (!amount || isNaN(amount) || amount <= 0) {
@@ -25,7 +22,7 @@ app.post('/create-order', async (req, res) => {
   }
   try {
     const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100), // Convert to paise
+      amount: Math.round(amount * 100),
       currency: 'INR',
       receipt: `receipt_${Date.now()}`,
     });
@@ -36,7 +33,6 @@ app.post('/create-order', async (req, res) => {
   }
 });
 
-// Store Transaction
 app.post('/store-transaction', (req, res) => {
   const { paymentId, amount } = req.body;
   const transaction = {
@@ -49,12 +45,11 @@ app.post('/store-transaction', (req, res) => {
   res.json({ success: true, transactions });
 });
 
-// Get Transaction History
 app.get('/transactions', (req, res) => {
   res.json({ success: true, transactions });
 });
 
-const PORT = process.env.PORT || 5001; // Different port to avoid conflict
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`✅ Payment Server running on port ${PORT}`);
 });
