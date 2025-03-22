@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
   res.send('UPI Payment Backend is Running 🚀');
 });
 
-// Create UPI-Only Razorpay Order
+// Create Razorpay Order for UPI (Google Pay, PhonePe, Paytm)
 app.post('/create-upi-order', async (req, res) => {
   const { amount } = req.body;
 
@@ -32,9 +32,6 @@ app.post('/create-upi-order', async (req, res) => {
       amount: Math.round(amount * 100), // Convert to paise
       currency: 'INR',
       payment_capture: 1, // Auto capture payment
-      notes: {
-        payment_method: 'UPI', // Force UPI only
-      },
     });
 
     res.json({ success: true, order_id: order.id });
