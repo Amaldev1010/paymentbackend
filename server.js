@@ -12,15 +12,15 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Store transactions locally (use a database in production)
+// Store transactions (Use DB in production)
 let transactions = [];
 
 app.get('/', (req, res) => {
-  res.send('Payment Backend is Running 🚀');
+  res.send('UPI Payment Backend is Running 🚀');
 });
 
-// Create UPI Payment Link
-app.post('/create-payment-link', async (req, res) => {
+// Create UPI-Only Razorpay Order
+app.post('/create-upi-order', async (req, res) => {
   const { amount } = req.body;
 
   if (!amount || isNaN(amount) || amount <= 0) {
@@ -28,28 +28,19 @@ app.post('/create-payment-link', async (req, res) => {
   }
 
   try {
-    const response = await razorpay.paymentLink.create({
+    const order = await razorpay.orders.create({
       amount: Math.round(amount * 100), // Convert to paise
       currency: 'INR',
-      description: 'UPI Payment',
-      customer: {
-        email: 'test@example.com',
-        contact: '9633516378', // ✅ Valid number
+      payment_capture: 1, // Auto capture payment
+      notes: {
+        payment_method: 'UPI', // Force UPI only
       },
-      notify: { sms: true, email: true },
-      callback_url: 'https://your-app-url.com/payment-status',
-      callback_method: 'get',
-      options: {
-        payment_methods: {
-          upi: true, // ✅ UPI only
-        }
-      }
     });
 
-    res.json({ success: true, payment_link: response.short_url });
+    res.json({ success: true, order_id: order.id });
   } catch (error) {
-    console.error("❌ Error creating UPI Payment Link:", error);
-    res.status(500).json({ success: false, message: "Failed to create UPI payment link.", error });
+    console.error("❌ Error creating UPI order:", error);
+    res.status(500).json({ success: false, message: "Failed to create UPI order.", error });
   }
 });
 
@@ -57,7 +48,7 @@ app.post('/create-payment-link', async (req, res) => {
 app.post('/store-transaction', (req, res) => {
   const { paymentId, amount } = req.body;
   const transaction = {
-    id: paymentId || `txn_${Date.now()}`,
+    id: paymentId || `upi_${Date.now()}`,
     amount: parseFloat(amount),
     date: new Date().toISOString(),
     status: 'Completed',
