@@ -12,12 +12,14 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Health check route
+// Store transactions locally (use a database in production)
+let transactions = [];
+
 app.get('/', (req, res) => {
   res.send('Payment Backend is Running 🚀');
 });
 
-// Create Razorpay Payment Link API with UPI Enabled
+// Create UPI Payment Link
 app.post('/create-payment-link', async (req, res) => {
   const { amount } = req.body;
 
@@ -29,28 +31,44 @@ app.post('/create-payment-link', async (req, res) => {
     const response = await razorpay.paymentLink.create({
       amount: Math.round(amount * 100), // Convert to paise
       currency: 'INR',
-      description: 'Test Payment with UPI',
+      description: 'UPI Payment',
       customer: {
         email: 'test@example.com',
         contact: '9633516378', // ✅ Valid number
       },
       notify: { sms: true, email: true },
-      callback_url: 'https://your-app-url.com/payment-status', // ✅ Replace with actual app URL
+      callback_url: 'https://your-app-url.com/payment-status',
       callback_method: 'get',
       options: {
         payment_methods: {
-          upi: true, // ✅ UPI Enabled
-          card: true, // Optional: Enable Cards
-          netbanking: true, // Optional: Enable Net Banking
+          upi: true, // ✅ UPI only
         }
       }
     });
 
     res.json({ success: true, payment_link: response.short_url });
   } catch (error) {
-    console.error("❌ Error creating Razorpay Payment Link:", error);
-    res.status(500).json({ success: false, message: "Failed to create payment link.", error });
+    console.error("❌ Error creating UPI Payment Link:", error);
+    res.status(500).json({ success: false, message: "Failed to create UPI payment link.", error });
   }
+});
+
+// Store transaction
+app.post('/store-transaction', (req, res) => {
+  const { paymentId, amount } = req.body;
+  const transaction = {
+    id: paymentId || `txn_${Date.now()}`,
+    amount: parseFloat(amount),
+    date: new Date().toISOString(),
+    status: 'Completed',
+  };
+  transactions.push(transaction);
+  res.json({ success: true, transactions });
+});
+
+// Get transaction history
+app.get('/transactions', (req, res) => {
+  res.json({ success: true, transactions });
 });
 
 const PORT = process.env.PORT || 5001;
