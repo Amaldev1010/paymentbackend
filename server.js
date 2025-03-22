@@ -6,7 +6,23 @@ const bodyParser = require('body-parser');
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Debug: Log requests
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  next();
+});
+
+// Debug: Check if environment variables are loaded
+console.log('Razorpay Key:', process.env.RAZORPAY_KEY_ID);
+console.log('Razorpay Secret:', process.env.RAZORPAY_KEY_SECRET);
+
+// Health Check Route
+app.get('/', (req, res) => {
+  res.send('Payment Backend is Running 🚀');
+});
 
 let transactions = [];
 
@@ -16,10 +32,13 @@ const razorpay = new Razorpay({
 });
 
 app.post('/create-order', async (req, res) => {
+  console.log('Received /create-order request with body:', req.body);
+  
   const { amount } = req.body;
   if (!amount || isNaN(amount) || amount <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid amount.' });
   }
+  
   try {
     const order = await razorpay.orders.create({
       amount: Math.round(amount * 100),
