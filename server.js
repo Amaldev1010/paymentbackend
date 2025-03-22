@@ -7,20 +7,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Simulated transaction history (optional, for your TransactionHistory page)
+let transactions = [];
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Store transactions (Use DB in production)
-let transactions = [];
-
+// Health check route
 app.get('/', (req, res) => {
-  res.send('UPI Payment Backend is Running 🚀');
+  res.send('Payment Backend is Running 🚀');
 });
 
-// Create Razorpay Order for UPI ID Payment
-app.post('/create-upi-order', async (req, res) => {
+// Create Razorpay Order (for Checkout)
+app.post('/create-order', async (req, res) => {
   const { amount } = req.body;
 
   if (!amount || isNaN(amount) || amount <= 0) {
@@ -31,23 +32,21 @@ app.post('/create-upi-order', async (req, res) => {
     const order = await razorpay.orders.create({
       amount: Math.round(amount * 100), // Convert to paise
       currency: 'INR',
-      payment_capture: 1, // Auto capture payment
+      receipt: `receipt_${Date.now()}`,
     });
-
     res.json({ success: true, order_id: order.id });
   } catch (error) {
-    console.error("❌ Error creating UPI order:", error);
-    res.status(500).json({ success: false, message: "Failed to create UPI order.", error });
+    console.error("❌ Error creating Razorpay order:", error);
+    res.status(500).json({ success: false, message: "Failed to create order.", error });
   }
 });
 
-// Store transaction
+// Store Transaction (optional, for your TransactionHistory page)
 app.post('/store-transaction', (req, res) => {
-  const { paymentId, amount, upiId } = req.body;
+  const { paymentId, amount } = req.body;
   const transaction = {
-    id: paymentId || `upi_${Date.now()}`,
+    id: paymentId || `txn_${Date.now()}`,
     amount: parseFloat(amount),
-    upiId: upiId || 'N/A',
     date: new Date().toISOString(),
     status: 'Completed',
   };
@@ -55,7 +54,7 @@ app.post('/store-transaction', (req, res) => {
   res.json({ success: true, transactions });
 });
 
-// Get transaction history
+// Get Transaction History (optional)
 app.get('/transactions', (req, res) => {
   res.json({ success: true, transactions });
 });
