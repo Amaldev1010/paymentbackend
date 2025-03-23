@@ -1,27 +1,4 @@
-require('dotenv').config();
-const express = require('express');
-const Razorpay = require('razorpay');
-const cors = require('cors');
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// Simulated transaction history (optional, for your TransactionHistory page)
-let transactions = [];
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
-// Health check route
-app.get('/', (req, res) => {
-  res.send('Payment Backend is Running 🚀');
-});
-
-// Create Razorpay Order (for Checkout)
-app.post('/create-order', async (req, res) => {
+app.post('/create-payment-link', async (req, res) => {
   const { amount } = req.body;
 
   if (!amount || isNaN(amount) || amount <= 0) {
@@ -29,37 +6,22 @@ app.post('/create-order', async (req, res) => {
   }
 
   try {
-    const order = await razorpay.orders.create({
+    const response = await razorpay.paymentLink.create({
       amount: Math.round(amount * 100), // Convert to paise
       currency: 'INR',
-      receipt: `receipt_${Date.now()}`,
+      description: 'Test Payment',
+      customer: {
+        email: 'test@example.com',
+        contact: '9633516378', // ✅ Updated with a valid number
+      },
+      notify: { sms: true, email: true },
+      callback_url: 'https://your-app-url.com/payment-status', // ✅ Replace with your app URL
+      callback_method: 'get',
     });
-    res.json({ success: true, order_id: order.id });
+
+    res.json({ success: true, payment_link: response.short_url });
   } catch (error) {
-    console.error("❌ Error creating Razorpay order:", error);
-    res.status(500).json({ success: false, message: "Failed to create order.", error });
+    console.error("❌ Error creating Razorpay Payment Link:", error);
+    res.status(500).json({ success: false, message: "Failed to create payment link.", error });
   }
-});
-
-// Store Transaction (optional, for your TransactionHistory page)
-app.post('/store-transaction', (req, res) => {
-  const { paymentId, amount } = req.body;
-  const transaction = {
-    id: paymentId || `txn_${Date.now()}`,
-    amount: parseFloat(amount),
-    date: new Date().toISOString(),
-    status: 'Completed',
-  };
-  transactions.push(transaction);
-  res.json({ success: true, transactions });
-});
-
-// Get Transaction History (optional)
-app.get('/transactions', (req, res) => {
-  res.json({ success: true, transactions });
-});
-
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`✅ Payment Server running on port ${PORT}`);
 });
