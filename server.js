@@ -1,3 +1,23 @@
+require('dotenv').config();
+const express = require('express');
+const Razorpay = require('razorpay');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// Health check route
+app.get('/', (req, res) => {
+  res.send('Payment Backend is Running 🚀');
+});
+
+// Create Razorpay Payment Link API
 app.post('/create-payment-link', async (req, res) => {
   const { amount } = req.body;
 
@@ -15,7 +35,7 @@ app.post('/create-payment-link', async (req, res) => {
         contact: '9633516378', // ✅ Updated with a valid number
       },
       notify: { sms: true, email: true },
-      callback_url: 'https://your-app-url.com/payment-status', // ✅ Replace with your app URL
+      callback_url: 'https://your-app-url.com/payment-success', // Replace with your actual success URL
       callback_method: 'get',
     });
 
@@ -24,4 +44,9 @@ app.post('/create-payment-link', async (req, res) => {
     console.error("❌ Error creating Razorpay Payment Link:", error);
     res.status(500).json({ success: false, message: "Failed to create payment link.", error });
   }
+});
+
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`✅ Payment Server running on port ${PORT}`);
 });
